@@ -4,14 +4,14 @@ module.exports = {
     getUsers(req, res){
         User.find()
             .select('-__v')
-            .populate("thoughts", "-__v")
+            .populate("thoughts", "-__v -reactions._id")
             .then ((users) => res.status(200).json(users))
             .catch ((err) => res.status(500).json(err));
     },
     getSingleUser(req, res){
         User.findOne({_id : req.params.userId})
             .select('-__v')
-            .populate("thoughts", "-__v")
+            .populate("thoughts", "-__v -reactions._id")
             .then ((user)=> {
                 !user
                     ? res.status(404).json({message: "There is no user with this id!"})
@@ -31,6 +31,7 @@ module.exports = {
             {runValidators: true, new: true}
         )
             .select('-__v')
+            .populate("thoughts", "-__v -reactions._id")
             .then((user)=>
                 !user
                 ? res.status(404).json({message: "There is no user with this id!"})
