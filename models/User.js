@@ -29,5 +29,13 @@ userSchema.virtual('friendCount').get(function(){
     return this.friends.length;
 })
 
+userSchema.set('toJSON', {
+    virtuals: true,
+    transform: function(doc, ret) {
+      delete ret.id; // Exclude the virtual's 'id' field
+      return ret;
+    }
+});
+
 const User = model('user', userSchema)
 module.exports= User;
