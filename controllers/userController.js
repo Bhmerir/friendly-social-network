@@ -92,40 +92,53 @@ module.exports = {
             )
     },
     removeUser(req, res) {
-        //here we delete a user
+        let deletedUser;
+        //Here we delete a user
         User.findByIdAndRemove({ _id: req.params.userId })
-          .then((user) => {
-            let deletedUser = user;
-            //then we find all the users who have the deleted user inside the list of their friends
-            return User.find({ friends: req.params.userId });
-          })
-          .then((userFriend) => {
-            if (!userFriend) {
-              return res.status(200).json({ message: "The user wasn't in the friends' list of any other users!" });
-            }
-      
-            const promises = [];
-            /* we iterate through the returned array from the find method and for deleting the id of deleted user from the friends
-            list of the other users,we add the promise of User.findOneAndUpdate for each one of them to an array 
-            and then we run all promises at once*/
-            for (let i = 0; i < userFriend.length; i++) {
-              promises.push(
-                User.findOneAndUpdate(
-                  { _id: userFriend[i]._id },
-                  { $pull: { friends: req.params.userId } },
-                  { runValidators: true, new: true }
-                )
-              );
-            }
-      
-            return Promise.all(promises);
-          })
-          .then((results) => {
-            for (let i = 0; i < results.length; i++) {
-              res.status(200).json({ message: `The user was deleted from the friends' list of ${userFriend[i].username}!` });
-            }
-          })
-          .catch((err) => res.status(500).json(err));
+            .then((user) => {
+                deletedUser = user;
+                //Then we find all the users who have the deleted user inside the list of their friends
+                return User.find({ friends: req.params.userId });
+            })
+            .then((userFriend) => {
+                if (!userFriend) {
+                return res.status(200).json({ message: "The user wasn't in the friends' list of any other users!" });
+                }
+        
+                const promises = [];
+                /* We iterate through the returned array from the find method and for deleting the id of the deleted user from the friends
+                list of the other users, we add the promise of User.findOneAndUpdate for each one of them to an array 
+                and then we run all promises at once*/
+                for (let i = 0; i < userFriend.length; i++) {
+                promises.push(
+                    User.findOneAndUpdate(
+                    { _id: userFriend[i]._id },
+                    { $pull: { friends: req.params.userId } },
+                    { runValidators: true, new: true }
+                    )
+                );
+                }
+        
+                return Promise.all(promises);
+            })
+            .then((results) => {
+                console.log(`The user was deleted from the friends' list`);
+                const promises = [];
+                /* We iterate through the array of deletedUser.thoughts, and we add a promise for removing each thought of the 
+                list to the array of promises and with executing Promise.all we can delete all the thoughts of the deleted user*/
+                console.log(deletedUser.thoughts)
+                for (let i = 0; i < deletedUser.thoughts.length; i++) {
+                    promises.push(
+                        Thought.findOneAndRemove({ _id: deletedUser.thoughts[i]._id })
+                    );
+                }
+        
+                return Promise.all(promises);
+            })
+            .then((results) => {
+                return res.status(200).json({ message: `The user was deleted with their thoughts`});
+            })                
+            .catch((err) => res.status(500).json(err));
       }
       
 }
