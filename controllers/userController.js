@@ -1,3 +1,4 @@
+const { Thought } = require('../models');
 const User = require('../models/User');
 
 module.exports = {
@@ -90,4 +91,41 @@ module.exports = {
                     .catch ((err) => res.status(500).json(err))
             )
     },
+    removeUser(req, res) {
+        //here we delete a user
+        User.findByIdAndRemove({ _id: req.params.userId })
+          .then((user) => {
+            let deletedUser = user;
+            //then we find all the users who have the deleted user inside the list of their friends
+            return User.find({ friends: req.params.userId });
+          })
+          .then((userFriend) => {
+            if (!userFriend) {
+              return res.status(200).json({ message: "The user wasn't in the friends' list of any other users!" });
+            }
+      
+            const promises = [];
+            /* we iterate through the returned array from the find method and for deleting the id of deleted user from the friends
+            list of the other users,we add the promise of User.findOneAndUpdate for each one of them to an array 
+            and then we run all promises at once*/
+            for (let i = 0; i < userFriend.length; i++) {
+              promises.push(
+                User.findOneAndUpdate(
+                  { _id: userFriend[i]._id },
+                  { $pull: { friends: req.params.userId } },
+                  { runValidators: true, new: true }
+                )
+              );
+            }
+      
+            return Promise.all(promises);
+          })
+          .then((results) => {
+            for (let i = 0; i < results.length; i++) {
+              res.status(200).json({ message: `The user was deleted from the friends' list of ${userFriend[i].username}!` });
+            }
+          })
+          .catch((err) => res.status(500).json(err));
+      }
+      
 }
