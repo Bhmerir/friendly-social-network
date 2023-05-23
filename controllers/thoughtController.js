@@ -21,8 +21,10 @@ module.exports = {
     },
     //create a new thought
     createThought(req, res){
+        let createdThought;
         Thought.create(req.body)
             .then ((thought) => {
+                createdThought = thought;
                 //add the id of new thought to the array of thoughts in User
                 return User.findOneAndUpdate(
                     { _id: req.body.userId },
@@ -35,7 +37,7 @@ module.exports = {
                     ? res.status(404).json({
                         message: 'The thought is created, but no user is found with that ID!',
                         })
-                    : res.status(200).json('The tought is created!')
+                    : res.status(200).json(createdThought)
             })
             .catch ((err) => res.status(500).json(err));
     },
@@ -95,11 +97,11 @@ module.exports = {
                         {$pull: {thoughts: req.params.thoughtId}},
                         {runValidators: true, new: true}
                     )
-            )
-            .then((user)=>
-                !user
-                    ? res.status(404).json({message: 'Thought is deleted but there is no user with this id!'})
-                    : res.status(200).json({message: 'Thought is successfully deleted!'})
+                    .then((user)=>
+                        !user
+                            ? res.status(404).json({message: 'Thought is deleted but there is no user with this id!'})
+                            : res.status(200).json({message: 'Thought is successfully deleted!'})
+                    )
             )
             .catch ((err) => res.status(500).json(err));
     }
